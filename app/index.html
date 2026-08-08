@@ -147,6 +147,7 @@
   .account-action-btn:hover{ background: var(--hover-bg); }
   .account-action-btn.danger{ color:#c0503f; border-color:#c0503f; }
   .account-action-btn.danger:hover{ background:#c0503f; color:#fff; }
+  .account-action-btn.danger.confirm{ background:#c0503f; color:#fff; }
   .account-list{ display:flex; flex-direction:column; gap:4px; max-height:140px; overflow-y:auto; }
   .account-list-item{
     display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:7px; cursor:pointer;
@@ -665,7 +666,8 @@
           </div>
           <div class="account-actions">
             <button class="account-action-btn" id="switchAccountBtn">Switch account</button>
-            <button class="account-action-btn danger" id="signOutBtn">Sign out</button>
+            <button class="account-action-btn" id="signOutBtn">Sign out</button>
+            <button class="account-action-btn danger" id="deleteAccountBtn">Delete account</button>
           </div>
         </div>
         <div id="accountSignedOutView">
@@ -924,6 +926,7 @@ const accountNameInput = document.getElementById('accountNameInput');
 const accountSignInBtn = document.getElementById('accountSignInBtn');
 const switchAccountBtn = document.getElementById('switchAccountBtn');
 const signOutBtn = document.getElementById('signOutBtn');
+const deleteAccountBtn = document.getElementById('deleteAccountBtn');
 const knownAccountsSection = document.getElementById('knownAccountsSection');
 const accountList = document.getElementById('accountList');
 
@@ -960,6 +963,9 @@ function refreshAccountModal(){
     accountModalName.textContent = currentAccountKey;
   }
   accountNameInput.value = '';
+  deleteAccountArmed = false;
+  deleteAccountBtn.textContent = 'Delete account';
+  deleteAccountBtn.classList.remove('confirm');
   renderKnownAccounts();
 }
 
@@ -994,6 +1000,31 @@ signOutBtn.addEventListener('click', () => {
   accountOverlay.classList.remove('open');
   animateChatSwitch(() => {
     snapshotCurrentSession();
+    loadSession('guest', true);
+    updateAccountSidebar();
+    renderAll();
+  });
+});
+
+let deleteAccountArmed = false;
+deleteAccountBtn.addEventListener('click', () => {
+  if (currentAccountKey === 'guest') return;
+  if (!deleteAccountArmed){
+    deleteAccountArmed = true;
+    deleteAccountBtn.textContent = 'Click again to confirm delete';
+    deleteAccountBtn.classList.add('confirm');
+    setTimeout(() => {
+      deleteAccountArmed = false;
+      deleteAccountBtn.textContent = 'Delete account';
+      deleteAccountBtn.classList.remove('confirm');
+    }, 3000);
+    return;
+  }
+  const toDelete = currentAccountKey;
+  delete sessions[toDelete];
+  deleteAccountArmed = false;
+  accountOverlay.classList.remove('open');
+  animateChatSwitch(() => {
     loadSession('guest', true);
     updateAccountSidebar();
     renderAll();
@@ -1559,7 +1590,7 @@ function extractErrorTextSafe(err){
   try { return JSON.stringify(err); } catch(e){ return "please try again"; }
 }
 
-// Initial Load Procedure - ALWAYS load a brand new chat on site visit
+// Initial Load Procedure
 loadAccountSessions();
 loadSession(currentAccountKey, true);
 updateAccountSidebar();
